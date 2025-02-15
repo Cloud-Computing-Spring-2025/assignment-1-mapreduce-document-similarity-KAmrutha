@@ -13,29 +13,6 @@ The goal of this assignment is to compute the **Jaccard Similarity** between pai
 
 You will be given multiple text documents. Each document will contain several words. Your task is to compute the **Jaccard Similarity** between all pairs of documents based on the set of words they contain.  
 
-#### **Example Documents**  
-
-##### **doc1.txt**  
-```
-cat, dog, rabbit
-```
-
-##### **doc2.txt**  
-```
-cat, dog, lion
-```
-
-##### **doc3.txt**  
-```
-cat, dog, rabbit, lion
-```
-## ** Output **
-```
-doc2.txt, doc3.txt	Similarity: 0.75
-doc3.txt, doc1.txt	Similarity: 0.75
-```
----
-
 # 📏 Jaccard Similarity Calculator
 
 ## Overview
@@ -186,6 +163,29 @@ exit
 ```
 docker cp resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/output/ shared-folder/output/
 ```
+#### **Example Documents**  
+
+##### **doc1.txt**  
+```
+cat, dog, rabbit
+```
+
+##### **doc2.txt**  
+```
+cat, dog, lion
+```
+
+##### **doc3.txt**  
+```
+cat, dog, rabbit, lion
+```
+## ** Output **
+```
+doc2.txt, doc3.txt	Similarity: 0.75
+doc3.txt, doc1.txt	Similarity: 0.75
+```
+---
+
 ### challenges faced 
 1. Computing similarities between document pairs 
  Implemented a unified reducer with optimized comparison logic that uses early termination for dissimilar documents.
