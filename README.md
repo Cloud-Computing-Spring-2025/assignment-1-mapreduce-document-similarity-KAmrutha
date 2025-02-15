@@ -9,7 +9,6 @@ The goal of this assignment is to compute the **Jaccard Similarity** between pai
 4. Outputs document pairs with similarity **above 50%**.  
 
 ---
-
 ### **📥 Example Input**  
 
 You will be given multiple text documents. Each document will contain several words. Your task is to compute the **Jaccard Similarity** between all pairs of documents based on the set of words they contain.  
@@ -18,19 +17,23 @@ You will be given multiple text documents. Each document will contain several wo
 
 ##### **doc1.txt**  
 ```
-hadoop is a distributed system
+cat, dog, rabbit
 ```
 
 ##### **doc2.txt**  
 ```
-hadoop is used for big data processing
+cat, dog, lion
 ```
 
 ##### **doc3.txt**  
 ```
-big data is important for analysis
+cat, dog, rabbit, lion
 ```
-
+## ** Output **
+```
+doc2.txt, doc3.txt	Similarity: 0.75
+doc3.txt, doc1.txt	Similarity: 0.75
+```
 ---
 
 # 📏 Jaccard Similarity Calculator
@@ -93,80 +96,98 @@ The output should show the Jaccard Similarity between document pairs in the foll
 
 ---
 
-### **🛠 Environment Setup: Running Hadoop in Docker**  
+### Approach and Implementation
+This section outlines the core components and methodology used in implementing the document similarity analysis system.
+### Architecture Overview
+The system is built on three fundamental components that work together to analyze document similarity. The DocumentSimilarityDriver serves as the primary controller, configuring and managing the MapReduce job execution. The DocumentSimilarityMapper component handles the processing of individual documents and term extraction. The DocumentSimilarityReducer takes care of combining the processed data and performing similarity calculations between documents.
+### How it Works
+## Mapper Implementation
+The Mapper component implements a systematic approach to document processing. It begins by reading documents line by line, accumulating the complete text content of each document. Once the content is gathered, it undergoes a series of processing steps. The text is split into individual words, which are then normalized by converting to lowercase and removing any special characters. These processed words are collected into a set of unique terms. Finally, the Mapper outputs a record containing the document's identifier along with its list of unique terms.
+## Reducer Implementation
+The Reducer component processes the aggregated document records to determine similarity between documents. For each possible pair of documents in the input set, it first parses their respective term lists. It then applies the Jaccard similarity coefficient to calculate the similarity between the document pairs. The final output consists of similarity scores for all document pairs, providing a comprehensive comparison across the document set.
+### Running the Project
+Prerequisites:
+```
+The project requires specific software components for successful execution. Java 8 or a higher version is needed as the primary programming platform. Hadoop 3.x must be installed and properly configured as the distributed processing framework. Maven is required for building the project and managing dependencies.
+```
+### **🛠 Instructions**  
 
 Since we are using **Docker Compose** to run a Hadoop cluster, follow these steps to set up your environment.  
 
-#### **Step 1: Install Docker & Docker Compose**  
+#### ** Install Docker & Docker Compose**  
 - **Windows**: Install **Docker Desktop** and enable WSL 2 backend.  
 - **macOS/Linux**: Install Docker using the official guide: [Docker Installation](https://docs.docker.com/get-docker/)  
 
-#### **Step 2: Start the Hadoop Cluster**  
-Navigate to the project directory where `docker-compose.yml` is located and run:  
-```sh
-docker-compose up -d
-```  
-This will start the Hadoop NameNode, DataNode, and ResourceManager services.  
+### Project Execution Commands
 
-#### **Step 3: Access the Hadoop Container**  
-Once the cluster is running, enter the **Hadoop master node** container:  
-```sh
-docker exec -it hadoop-master /bin/bash
+### Start the Docker containers:
 ```
-
----
-
-### **📦 Building and Running the MapReduce Job with Maven**  
-
-#### **Step 1: Build the JAR File**  
-Ensure Maven is installed, then navigate to your project folder and run:  
-```sh
-mvn clean package
-```  
-This will generate a JAR file inside the `target` directory.  
-
-#### **Step 2: Copy the JAR File to the Hadoop Container**  
-Move the compiled JAR into the running Hadoop container:  
-```sh
-docker cp target/similarity.jar hadoop-master:/opt/hadoop-3.2.1/share/hadoop/mapreduce/similarity.jar
+docker compose up -d
 ```
-
----
-
-### **📂 Uploading Data to HDFS**  
-
-#### **Step 1: Create an Input Directory in HDFS**  
-Inside the Hadoop container, create the directory where input files will be stored:  
-```sh
-hdfs dfs -mkdir -p /input
+### Build the project using Maven:
 ```
-
-#### **Step 2: Upload Dataset to HDFS**  
-Copy your local dataset into the Hadoop cluster’s HDFS:  
-```sh
-hdfs dfs -put /path/to/local/input/* /input/
+mvn install
 ```
-
----
-
-### **🚀 Running the MapReduce Job**  
-
-Run the Hadoop job using the JAR file inside the container:  
-```sh
-hadoop jar similarity.jar DocumentSimilarityDriver /input /output_similarity /output_final
+### Move the compiled JAR to the shared folder:
 ```
-
----
-
-### **📊 Retrieving the Output**  
-
-To view the results stored in HDFS:  
-```sh
-hdfs dfs -cat /output_final/part-r-00000
+mv target/*.jar shared-folder/input/code/
 ```
+### Copy necessary files to the resource manager container:
 
-If you want to download the output to your local machine:  
-```sh
-hdfs dfs -get /output_final /path/to/local/output
+### Copy the application JAR
 ```
----
+docker cp shared-folder/input/code/DocumentSimilarity-0.0.1-SNAPSHOT.jar resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+```
+# Copy the sample documents
+```
+docker cp shared-folder/input/example/doc1.txt resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+docker cp shared-folder/input/example/doc2.txt resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+docker cp shared-folder/input/example/doc3.txt resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+```
+### Running the MapReduce Job
+
+### Connect to the resource manager container:
+```
+docker exec -it resourcemanager /bin/bash
+```
+### Navigate to the MapReduce directory:
+```
+cd /opt/hadoop-3.2.1/share/hadoop/mapreduce/
+```
+### Create HDFS input directory and upload data:
+
+# Create input directory
+```
+hadoop fs -mkdir -p /input/dataset
+```
+# Upload sample documents
+```
+hadoop fs -put ./doc1.txt /input/dataset
+hadoop fs -put ./doc2.txt /input/dataset
+hadoop fs -put ./doc3.txt /input/dataset
+```
+### Execute the MapReduce job:
+```
+hadoop jar /opt/hadoop-3.2.1/share/hadoop/mapreduce/DocumentSimilarity-0.0.1-SNAPSHOT.jar com.example.controller.DocumentSimilarityDriver /input/dataset /output
+```
+### Viewing and Retrieving Results
+```
+hadoop fs -cat /output/*
+```
+### Copy results to local filesystem within container:
+```
+hdfs dfs -get /output /opt/hadoop-3.2.1/share/hadoop/mapreduce/
+```
+### Exit the container:
+```
+exit
+```
+### Copy results from container to host machine:
+```
+docker cp resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/output/ shared-folder/output/
+```
+### challenges faced 
+1. Computing similarities between document pairs 
+ Implemented a unified reducer with optimized comparison logic that uses early termination for dissimilar documents.
+ 2. Need to handle streaming updates to similarity calculations as new documents arrive.
+ Implement incremental similarity updates that can efficiently update existing results when new documents are added.
